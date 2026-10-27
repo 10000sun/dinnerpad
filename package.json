@@ -1,6 +1,6 @@
 {
   "name": "dinnerpad",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "오프라인으로 쓰는 런치패드형 사운드보드",
   "main": "main.js",
   "license": "MIT",
@@ -37,10 +37,10 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "Dinnerpad-Setup-${version}.${ext}"
+      "artifactName": "Dinnerpad-Setup.${ext}"
     },
     "portable": {
-      "artifactName": "Dinnerpad-Portable-${version}.${ext}"
+      "artifactName": "Dinnerpad-Portable.${ext}"
     }
   },
   "devDependencies": {

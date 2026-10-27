@@ -8,8 +8,8 @@
 
 | 파일 | 설명 |
 |---|---|
-| `Dinnerpad-Setup-x.y.z.exe` | 설치형. 설정과 사운드는 `%APPDATA%\dinnerpad`에 저장됩니다. |
-| `Dinnerpad-Portable-x.y.z.exe` | 설치 없이 실행. 설정과 사운드는 실행 파일 옆 `data` 폴더에 저장되므로 USB에 넣어 다닐 수 있습니다. |
+| [`Dinnerpad-Setup.exe`](https://github.com/10000sun/dinnerpad/releases/latest/download/Dinnerpad-Setup.exe) | 설치형. 설정과 사운드는 `%APPDATA%\dinnerpad`에 저장됩니다. |
+| [`Dinnerpad-Portable.exe`](https://github.com/10000sun/dinnerpad/releases/latest/download/Dinnerpad-Portable.exe) | 설치 없이 실행. 설정과 사운드는 실행 파일 옆 `data` 폴더에 저장되므로 USB에 넣어 다닐 수 있습니다. |
 
 ## 사용법
 
