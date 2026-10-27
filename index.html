@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; media-src file:">
+  <title>Dinnerpad</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <label>출력 장치 <select id="device"></select></label>
+    <button id="stop">모두 정지</button>
+  </header>
+  <main id="grid"></main>
+  <div id="status" role="status"></div>
+  <footer>
+    <button id="edit">편집</button>
+    <button id="del">삭제</button>
+    <button id="key">단축키</button>
+  </footer>
+  <dialog id="dlg">
+    <form method="dialog">
+      <label>이름 <input id="name" maxlength="40"></label>
+      <label>사운드 <button type="button" id="pick">파일 선택</button> <span id="file"></span></label>
+      <label>색 <input type="color" id="color"></label>
+      <menu>
+        <button type="button" id="cancel">취소</button>
+        <button id="ok" value="ok">저장</button>
+      </menu>
+    </form>
+  </dialog>
+  <script src="accel.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>

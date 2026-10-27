@@ -1,0 +1,34 @@
+:root { --bg: #14151a; --fg: #e8e9ee; --dim: #8a8d99; --panel: #1d1f27; --line: #2c2f3a; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; padding: 16px; display: flex; flex-direction: column; gap: 12px;
+  background: var(--bg); color: var(--fg); font: 14px/1.4 "Segoe UI", "Malgun Gothic", sans-serif;
+}
+header, footer { display: flex; gap: 8px; align-items: center; }
+header label { flex: 1; display: flex; gap: 8px; align-items: center; min-width: 0; }
+select, button, input { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+select { flex: 1; min-width: 0; }
+button { cursor: pointer; }
+button:hover { border-color: var(--dim); }
+footer button { flex: 1; }
+
+#grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; width: min(100%, calc(100vh - 230px)); margin: 0 auto; }
+.pad {
+  aspect-ratio: 1; position: relative; display: flex; align-items: center; justify-content: center;
+  padding: 4px; border-width: 2px; border-radius: 12px; overflow: hidden;
+}
+.pad:not(.empty) { background: color-mix(in srgb, var(--c) 45%, var(--bg)); border-color: var(--c); }
+.pad.on { background: var(--c); box-shadow: 0 0 16px var(--c); }
+.pad.sel { outline: 2px solid #fff; outline-offset: 2px; }
+.n { font-weight: 600; text-align: center; word-break: break-all; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.k { position: absolute; left: 4px; bottom: 3px; font-size: 10px; background: #0008; border-radius: 4px; padding: 0 4px; }
+.pad.fail .k { background: #c0392b; }
+
+#status { min-height: 1.4em; color: var(--dim); text-align: center; }
+
+dialog { background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 12px; padding: 20px; min-width: 300px; }
+dialog::backdrop { background: #0009; }
+dialog form { display: flex; flex-direction: column; gap: 12px; }
+dialog label { display: flex; gap: 8px; align-items: center; }
+dialog input:not([type=color]) { flex: 1; }
+dialog menu { display: flex; justify-content: flex-end; gap: 8px; margin: 0; padding: 0; }
