@@ -1,12 +1,14 @@
 const $ = (id) => document.getElementById(id);
 const N = 25;
 const KINDS = ['monitor', 'mic'];
-const NAME = { monitor: '내가 들을 장치', mic: '마이크로 보낼 장치' };
+const NAME = { monitor: '내가 들을 장치', mic: '마이크로 보낼 장치', input: '내 마이크' };
 const players = new Map(); // 패드 번호 -> 재생 중인 Audio 집합
 const pads = [];
-// setSinkId에 넘길 값. monitor는 ''(시스템 기본), mic은 null(사용 안 함)
-const sinks = { monitor: '', mic: null };
+// 장치 id. monitor는 ''(시스템 기본), mic과 input은 null(사용 안 함)
+const sinks = { monitor: '', mic: null, input: null };
 let cfg, soundsUrl, sel = -1, capturing = false, failed = new Set(), draft;
+let voice = null; // 내 마이크 -> 마이크로 보낼 장치로 흘려보내는 중인 오디오 그래프
+let voiceJob = Promise.resolve();
 
 const say = (msg) => { $('status').textContent = msg || ''; };
 
@@ -76,24 +78,61 @@ function play(i) {
   })).then(() => items.forEach((a) => set.has(a) && a.play().catch((e) => drop(a, e))));
 }
 
-async function loadDevices() {
-  const all = (await navigator.mediaDevices.enumerateDevices())
-    .filter((d) => d.kind === 'audiooutput' && d.deviceId !== 'default' && d.deviceId !== 'communications');
-  const lost = [];
-  for (const k of KINDS) {
-    const select = $('dev-' + k);
-    select.replaceChildren(new Option(k === 'monitor' ? '시스템 기본' : '사용 안 함', ''));
-    all.forEach((d, i) => select.add(new Option(d.label || `출력 장치 ${i + 1}`, d.deviceId)));
-    // 저장된 장치를 id, 그다음 이름으로 찾는다. 없으면 설정은 그대로 두고 이번 실행에서만 쓰지 않는다
-    const want = cfg[k];
-    const hit = want.id && ([...select.options].find((o) => o.value === want.id) || [...select.options].find((o) => o.value && o.text === want.label));
-    select.value = hit ? hit.value : '';
-    sinks[k] = hit ? hit.value : k === 'monitor' ? '' : null;
-    if (want.id && !hit) lost.push(NAME[k]);
-  }
-  render();
-  if (lost.length) say(`${lost.join(', ')}를 찾을 수 없습니다. ${lost.includes(NAME.monitor) ? '시스템 기본 장치로 재생합니다.' : ''}`);
+// 목록을 채우고 저장된 장치를 id, 그다음 이름으로 찾아 고른다. 못 찾으면 null
+// (설정은 그대로 두고 이번 실행에서만 쓰지 않는다)
+function fill(select, list, none, want) {
+  select.replaceChildren(new Option(none, ''));
+  list.forEach((d, i) => select.add(new Option(d.label || `장치 ${i + 1}`, d.deviceId)));
+  const hit = want.id && ([...select.options].find((o) => o.value === want.id) || [...select.options].find((o) => o.value && o.text === want.label));
+  select.value = hit ? hit.value : '';
+  return hit ? hit.value : null;
 }
+
+async function loadDevices() {
+  const devs = await navigator.mediaDevices.enumerateDevices();
+  const outs = devs.filter((d) => d.kind === 'audiooutput' && d.deviceId !== 'default' && d.deviceId !== 'communications');
+  const ins = devs
+    .filter((d) => d.kind === 'audioinput' && d.deviceId !== 'communications')
+    .map((d) => (d.deviceId === 'default' ? { deviceId: 'default', label: '시스템 기본 마이크' } : d));
+  const monitor = fill($('dev-monitor'), outs, '시스템 기본', cfg.monitor);
+  sinks.monitor = monitor || '';
+  sinks.mic = fill($('dev-mic'), outs, '사용 안 함', cfg.mic);
+  sinks.input = fill($('dev-input'), ins, '사용 안 함', cfg.input);
+  render();
+  const lost = [];
+  if (cfg.monitor.id && !monitor) lost.push(NAME.monitor);
+  if (cfg.mic.id && !sinks.mic) lost.push(NAME.mic);
+  if (cfg.input.id && !sinks.input) lost.push(NAME.input);
+  if (lost.length) say(`${lost.join(', ')}를 찾을 수 없습니다. ${lost.includes(NAME.monitor) ? '시스템 기본 장치로 재생합니다.' : ''}`);
+  syncVoice();
+}
+
+// 내 마이크를 마이크로 보낼 장치로 흘려보낸다. 같은 장치로 가는 패드 소리와는 Windows가 섞어 준다.
+// 켜짐/꺼짐은 "마이크 전송" 토글과 무관하다. 토글을 꺼도 내 목소리는 계속 전달된다
+async function startVoice() {
+  const key = sinks.input && sinks.mic ? sinks.input + '|' + sinks.mic : '';
+  if (voice && voice.key === key) return;
+  if (voice) {
+    voice.stream.getTracks().forEach((t) => t.stop());
+    await voice.ctx.close();
+    voice = null;
+  }
+  if (!key) return;
+  try {
+    // 디스코드 등이 따로 처리하므로 브라우저의 음성 보정은 끈다
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { deviceId: { exact: sinks.input }, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    });
+    const ctx = new AudioContext({ latencyHint: 'interactive', sinkId: sinks.mic });
+    const gain = ctx.createGain();
+    gain.gain.value = cfg.volume.voice / 100;
+    ctx.createMediaStreamSource(stream).connect(gain).connect(ctx.destination);
+    voice = { key, ctx, stream, gain };
+  } catch (e) {
+    say(`마이크 섞어 보내기를 시작하지 못했습니다: ${e.message}`);
+  }
+}
+const syncVoice = () => (voiceJob = voiceJob.then(startVoice));
 
 function select(i) {
   sel = i;
@@ -208,13 +247,24 @@ for (const k of KINDS) {
     const v = e.target.value;
     sinks[k] = v || (k === 'monitor' ? '' : null);
     cfg[k] = v ? { id: v, label: e.target.selectedOptions[0].text } : { id: '', label: '' };
+    if (k === 'mic') syncVoice(); // 내 마이크가 흘러갈 곳이 바뀐다
     commit();
   };
+}
+$('dev-input').onchange = (e) => {
+  const v = e.target.value;
+  sinks.input = v || null;
+  cfg.input = v ? { id: v, label: e.target.selectedOptions[0].text } : { id: '', label: '' };
+  syncVoice();
+  commit();
+};
+for (const k of [...KINDS, 'voice']) {
   const r = $('vol-' + k);
   r.oninput = () => {
     cfg.volume[k] = +r.value;
     $('out-' + k).textContent = r.value + '%';
     players.forEach((s) => s.forEach((a) => { if (a.k === k) a.volume = r.value / 100; }));
+    if (k === 'voice' && voice) voice.gain.gain.value = r.value / 100;
   };
   r.onchange = commit;
 }
@@ -264,7 +314,7 @@ window.addEventListener('blur', () => capturing && endCapture(null));
     $('grid').append(el);
     pads.push(el);
   }
-  for (const k of KINDS) {
+  for (const k of [...KINDS, 'voice']) {
     $('vol-' + k).value = cfg.volume[k];
     $('out-' + k).textContent = cfg.volume[k] + '%';
   }

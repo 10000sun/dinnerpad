@@ -20,7 +20,8 @@ function normalize(c = {}) {
   return {
     monitor: dev(c.monitor || c.device),
     mic: dev(c.mic),
-    volume: { monitor: vol(v.monitor), mic: vol(v.mic) },
+    input: dev(c.input), // 마이크로 보낼 장치에 섞어 보낼 실제 마이크
+    volume: { monitor: vol(v.monitor), mic: vol(v.mic), voice: vol(v.voice) },
     micOn: c.micOn !== false,
     hotkeys: c.hotkeys !== false,
     alwaysOnTop: c.alwaysOnTop === true,

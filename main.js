@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Tray, nativeImage, globalShortcut, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, Menu, Tray, nativeImage, globalShortcut, ipcMain, dialog, shell, session } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
@@ -211,6 +211,7 @@ if (!app.requestSingleInstanceLock()) {
   app.on('before-quit', () => { quitting = true; });
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
+    session.defaultSession.setPermissionRequestHandler((_, permission, cb) => cb(permission === 'media')); // 마이크 외 권한은 거부
     failed = register();
     createWindow();
     if (startHidden) toTray();

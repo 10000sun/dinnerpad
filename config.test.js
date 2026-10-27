@@ -5,8 +5,9 @@ const { normalize, SIZE } = require('./config');
 test('빈 설정은 기본값으로 채운다', () => {
   const c = normalize();
   assert.strictEqual(c.pads.length, SIZE);
-  assert.deepStrictEqual(c.volume, { monitor: 100, mic: 100 });
+  assert.deepStrictEqual(c.volume, { monitor: 100, mic: 100, voice: 100 });
   assert.strictEqual(c.mic.id, '');
+  assert.strictEqual(c.input.id, '');
   assert.deepStrictEqual([c.micOn, c.hotkeys, c.alwaysOnTop], [true, true, false]);
 });
 
@@ -27,7 +28,7 @@ test('이전 버전의 device 설정을 monitor로 이어받는다', () => {
 });
 
 test('볼륨은 0~100으로 맞춘다', () => {
-  assert.deepStrictEqual(normalize({ volume: { monitor: 250, mic: -5 } }).volume, { monitor: 100, mic: 0 });
+  assert.deepStrictEqual(normalize({ volume: { monitor: 250, mic: -5, voice: 40 } }).volume, { monitor: 100, mic: 0, voice: 40 });
   assert.strictEqual(normalize({ volume: { monitor: 'x' } }).volume.monitor, 100);
 });
 
