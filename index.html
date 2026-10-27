@@ -12,7 +12,7 @@
     <button class="tab on" data-tab="pads">패드</button>
     <button class="tab" data-tab="settings">설정</button>
     <span class="sp"></span>
-    <button class="tg" id="tg-mic" aria-pressed="false" title="마이크로 보낼 장치로도 함께 재생">마이크 전송</button>
+    <button class="tg" id="tg-mic" aria-pressed="false" title="입력 장치의 내 마이크를 출력 장치로 섞어 보냅니다">내 마이크</button>
     <button class="tg" id="tg-hotkeys" aria-pressed="false" title="다른 프로그램 사용 중에도 단축키로 재생">전역 단축키</button>
     <button class="tg" id="tg-top" aria-pressed="false" title="다른 창 위에 항상 표시">항상 위</button>
     <button id="stop">■ 모두 정지</button>
@@ -29,21 +29,16 @@
 
   <section id="v-settings" hidden>
     <div class="card">
-      <h2>내가 들을 장치</h2>
-      <select id="dev-monitor"></select>
-      <label class="vol">볼륨 <input type="range" id="vol-monitor" min="0" max="100"> <output id="out-monitor"></output></label>
+      <h2>출력 장치</h2>
+      <select id="dev-output"></select>
+      <label class="vol">볼륨 <input type="range" id="vol-output" min="0" max="100"> <output id="out-output"></output></label>
+      <p class="hint">패드 소리와 입력 장치의 내 마이크 소리가 모두 이 장치로 나갑니다. 오인페라면 재생 채널(예: Playback 3/4)을 고르고, 인터페이스 믹서에서 그 채널을 헤드폰과 루프백 입력으로 연결하세요.</p>
     </div>
     <div class="card">
-      <h2>마이크로 보낼 장치 <small>선택 사항</small></h2>
-      <select id="dev-mic"></select>
-      <label class="vol">볼륨 <input type="range" id="vol-mic" min="0" max="100"> <output id="out-mic"></output></label>
-      <p class="hint">오인페의 재생 채널이나 가상 케이블을 고르면, 패드를 누를 때 위 장치와 동시에 재생됩니다. 사용 안 함이면 내가 들을 장치로만 재생됩니다.</p>
-    </div>
-    <div class="card">
-      <h2>내 마이크 섞어 보내기 <small>선택 사항</small></h2>
+      <h2>입력 장치 <small>내 마이크 · 선택 사항</small></h2>
       <select id="dev-input"></select>
       <label class="vol">볼륨 <input type="range" id="vol-voice" min="0" max="100"> <output id="out-voice"></output></label>
-      <p class="hint">실제 마이크를 고르면 내 목소리가 패드 소리와 함께 위의 마이크로 보낼 장치로 전달됩니다. 마이크로 보낼 장치를 먼저 고르세요. 가상 케이블이나 루프백 입력을 고르면 소리가 되돌아 울리니 반드시 실제 마이크를 고르세요. 앱을 거치므로 목소리가 약간 늦게 전달되고, 상단의 마이크 전송 토글을 꺼도 목소리는 계속 전달됩니다.</p>
+      <p class="hint">실제 마이크를 고르면 내 목소리가 패드 소리와 함께 출력 장치로 나갑니다. 가상 케이블이나 루프백 입력을 고르면 소리가 되돌아 울리니 반드시 실제 마이크를 고르세요. 목소리가 앱을 거치므로 약간 늦게 전달됩니다. 출력 장치가 내 헤드폰에 들리는 채널이면 내 목소리도 들립니다. 상단의 내 마이크 토글로 켜고 끌 수 있습니다.</p>
     </div>
     <div class="card">
       <h2>창을 닫을 때</h2>

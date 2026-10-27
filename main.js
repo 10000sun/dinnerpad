@@ -134,11 +134,11 @@ function trayMenu() {
     win.webContents.send('config-patch', { [key]: cfg[key], failed }); // 렌더러가 들고 있는 설정도 맞춘다
     tray.setContextMenu(trayMenu());
   };
-  const hasMic = !!cfg.mic.id;
+  const hasInput = !!cfg.input.id;
   return Menu.buildFromTemplate([
     { label: '열기', click: showWin },
     { type: 'separator' },
-    { label: hasMic ? '마이크 전송' : '마이크 전송 (장치 미선택)', type: 'checkbox', checked: hasMic && cfg.micOn, enabled: hasMic, click: flip('micOn') },
+    { label: hasInput ? '내 마이크' : '내 마이크 (입력 장치 미선택)', type: 'checkbox', checked: hasInput && cfg.micOn, enabled: hasInput, click: flip('micOn') },
     { label: '전역 단축키', type: 'checkbox', checked: cfg.hotkeys, click: flip('hotkeys') },
     { label: '항상 위', type: 'checkbox', checked: cfg.alwaysOnTop, click: flip('alwaysOnTop') },
     { type: 'separator' },

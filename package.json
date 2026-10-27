@@ -1,7 +1,7 @@
 {
   "name": "dinnerpad",
   "version": "0.2.0",
-  "description": "오프라인으로 쓰는 런치패드형 사운드보드",
+  "description": "Dinnerpad",
   "main": "main.js",
   "license": "MIT",
   "author": "10000sun",

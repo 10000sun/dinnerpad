@@ -16,12 +16,11 @@ function normalize(c = {}) {
     };
   });
   const v = c.volume || {};
-  // 이전 버전의 단일 device 설정은 "내가 들을 장치"로 이어받는다
+  // 이전 버전의 device, monitor 설정은 출력 장치로 이어받는다
   return {
-    monitor: dev(c.monitor || c.device),
-    mic: dev(c.mic),
-    input: dev(c.input), // 마이크로 보낼 장치에 섞어 보낼 실제 마이크
-    volume: { monitor: vol(v.monitor), mic: vol(v.mic), voice: vol(v.voice) },
+    output: dev(c.output || c.monitor || c.device),
+    input: dev(c.input), // 출력 장치로 섞어 보낼 실제 마이크
+    volume: { output: vol(v.output !== undefined ? v.output : v.monitor), voice: vol(v.voice) },
     micOn: c.micOn !== false,
     hotkeys: c.hotkeys !== false,
     alwaysOnTop: c.alwaysOnTop === true,
