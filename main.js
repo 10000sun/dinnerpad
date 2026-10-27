@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Tray, nativeImage, globalShortcut, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, Menu, Tray, nativeImage, globalShortcut, ipcMain, dialog, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
@@ -27,6 +27,11 @@ let tray;
 let quitting = false;
 let failed = [];
 const iconPath = path.join(__dirname, 'icon.png');
+const REPO_URL = 'https://github.com/10000sun/dinnerpad';
+const startHidden = process.argv.includes('--hidden'); // 시작 프로그램으로 실행되면 트레이로 시작
+
+// 포터블은 실행 때마다 임시 폴더에 풀리므로 원본 exe 경로를 등록한다
+const loginOpts = () => ({ path: process.env.PORTABLE_EXECUTABLE_FILE || process.execPath, args: ['--hidden'] });
 
 function persist() {
   fs.mkdirSync(dataDir, { recursive: true });
@@ -56,7 +61,21 @@ function sweep() {
   for (const f of fs.readdirSync(soundsDir)) if (!used.has(f)) fs.rmSync(path.join(soundsDir, f), { force: true });
 }
 
+// 개발 모드(electron.exe)를 시작 프로그램에 등록하지 않도록 패키징된 앱에서만 허용한다
+ipcMain.handle('autostart:get', () => ({
+  supported: app.isPackaged,
+  enabled: app.isPackaged && app.getLoginItemSettings(loginOpts()).openAtLogin,
+}));
+ipcMain.handle('autostart:set', (_, on) => {
+  if (!app.isPackaged) return false;
+  app.setLoginItemSettings({ openAtLogin: !!on, ...loginOpts() });
+  return app.getLoginItemSettings(loginOpts()).openAtLogin;
+});
+ipcMain.handle('repo:open', () => shell.openExternal(REPO_URL)); // 주소는 고정값만 연다
+
 ipcMain.handle('state', () => ({
+  version: app.getVersion(),
+  repoUrl: REPO_URL,
   config: cfg,
   soundsUrl: pathToFileURL(soundsDir).href + '/',
   failed,
@@ -168,6 +187,7 @@ function createWindow() {
     backgroundColor: '#101116',
     alwaysOnTop: cfg.alwaysOnTop,
     icon: iconPath,
+    show: !startHidden,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       backgroundThrottling: false, // 창이 가려져도 단축키로 즉시 재생
@@ -193,6 +213,7 @@ if (!app.requestSingleInstanceLock()) {
     Menu.setApplicationMenu(null);
     failed = register();
     createWindow();
+    if (startHidden) toTray();
   });
   app.on('window-all-closed', () => app.quit());
   app.on('will-quit', () => globalShortcut.unregisterAll());

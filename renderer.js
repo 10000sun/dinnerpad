@@ -269,6 +269,14 @@ window.addEventListener('blur', () => capturing && endCapture(null));
     $('out-' + k).textContent = cfg.volume[k] + '%';
   }
   $('closeAction').value = cfg.closeAction;
+  $('ver').textContent = 'v' + s.version;
+  $('repo').textContent = s.repoUrl.replace('https://', '');
+  $('repo').onclick = (e) => { e.preventDefault(); dp.openRepo(); };
+  const auto = await dp.autostart();
+  $('autostart').checked = auto.enabled;
+  $('autostart').disabled = !auto.supported;
+  if (!auto.supported) $('autostart-hint').textContent = '설치형·포터블 버전에서만 사용할 수 있습니다.';
+  $('autostart').onchange = async (e) => { e.target.checked = await dp.setAutostart(e.target.checked); };
   render();
   warn();
   await loadDevices();
