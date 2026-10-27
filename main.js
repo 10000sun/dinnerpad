@@ -1,7 +1,8 @@
-const { app, BrowserWindow, Menu, globalShortcut, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, Menu, Tray, nativeImage, globalShortcut, ipcMain, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
+const { normalize } = require('./config');
 
 // 포터블 빌드는 실행 파일 옆 data 폴더에, 그 외에는 사용자 AppData에 저장한다
 const portableDir = process.env.PORTABLE_EXECUTABLE_DIR;
@@ -9,22 +10,6 @@ if (portableDir) app.setPath('userData', path.join(portableDir, 'data'));
 const dataDir = app.getPath('userData');
 const soundsDir = path.join(dataDir, 'sounds');
 const configFile = path.join(dataDir, 'config.json');
-const SIZE = 25;
-
-function normalize(c = {}) {
-  const pads = Array.from({ length: SIZE }, (_, i) => {
-    const p = c.pads && c.pads[i];
-    if (!p || typeof p.file !== 'string' || !p.file) return null;
-    return {
-      name: String(p.name || '').slice(0, 40),
-      file: path.basename(p.file), // 경로 이탈 방지
-      color: /^#[0-9a-f]{6}$/i.test(p.color) ? p.color : '#3b82f6',
-      key: typeof p.key === 'string' ? p.key : '',
-    };
-  });
-  const d = c.device || {};
-  return { device: { id: String(d.id || ''), label: String(d.label || '') }, pads };
-}
 
 function load() {
   try {
@@ -38,11 +23,21 @@ function load() {
 
 let cfg = load();
 let win;
+let tray;
+let quitting = false;
 let failed = [];
+const iconPath = path.join(__dirname, 'icon.png');
+
+function persist() {
+  fs.mkdirSync(dataDir, { recursive: true });
+  fs.writeFileSync(configFile + '.tmp', JSON.stringify(cfg, null, 2));
+  fs.renameSync(configFile + '.tmp', configFile);
+}
 
 function register() {
   globalShortcut.unregisterAll();
   const bad = [];
+  if (!cfg.hotkeys) return bad;
   cfg.pads.forEach((p, i) => {
     if (!p || !p.key) return;
     let ok = false;
@@ -69,10 +64,9 @@ ipcMain.handle('state', () => ({
 
 ipcMain.handle('save', (_, c) => {
   cfg = normalize(c);
-  fs.mkdirSync(dataDir, { recursive: true });
-  fs.writeFileSync(configFile + '.tmp', JSON.stringify(cfg, null, 2));
-  fs.renameSync(configFile + '.tmp', configFile);
+  persist();
   sweep();
+  if (win) win.setAlwaysOnTop(cfg.alwaysOnTop);
   return (failed = register());
 });
 
@@ -99,13 +93,81 @@ ipcMain.handle('pick', async () => {
   return { file, name: path.basename(src, path.extname(src)) };
 });
 
+const quit = () => {
+  quitting = true;
+  app.quit();
+};
+
+function showWin() {
+  if (tray) { tray.destroy(); tray = null; }
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+}
+
+// 트레이 메뉴에서 상단 바 토글과 같은 상태를 보고 바꾼다
+function trayMenu() {
+  const flip = (key) => () => {
+    cfg[key] = !cfg[key];
+    persist();
+    if (key === 'alwaysOnTop') win.setAlwaysOnTop(cfg.alwaysOnTop);
+    if (key === 'hotkeys') failed = register();
+    win.webContents.send('config-patch', { [key]: cfg[key], failed }); // 렌더러가 들고 있는 설정도 맞춘다
+    tray.setContextMenu(trayMenu());
+  };
+  const hasMic = !!cfg.mic.id;
+  return Menu.buildFromTemplate([
+    { label: '열기', click: showWin },
+    { type: 'separator' },
+    { label: hasMic ? '마이크 전송' : '마이크 전송 (장치 미선택)', type: 'checkbox', checked: hasMic && cfg.micOn, enabled: hasMic, click: flip('micOn') },
+    { label: '전역 단축키', type: 'checkbox', checked: cfg.hotkeys, click: flip('hotkeys') },
+    { label: '항상 위', type: 'checkbox', checked: cfg.alwaysOnTop, click: flip('alwaysOnTop') },
+    { type: 'separator' },
+    { label: '종료', click: quit },
+  ]);
+}
+
+// 창만 숨기고 프로세스는 남겨 둔다. 전역 단축키는 계속 동작한다
+function toTray() {
+  if (!tray) {
+    tray = new Tray(nativeImage.createFromPath(iconPath).resize({ width: 32, height: 32 }));
+    tray.setToolTip('Dinnerpad');
+    tray.on('click', showWin);
+  }
+  tray.setContextMenu(trayMenu()); // 열 때마다 최신 상태로
+  win.hide();
+}
+
+async function onClose() {
+  if (cfg.closeAction === 'quit') return quit();
+  if (cfg.closeAction === 'tray') return toTray();
+  const r = await dialog.showMessageBox(win, {
+    type: 'question',
+    buttons: ['트레이로 보내기', '종료', '취소'],
+    defaultId: 0,
+    cancelId: 2,
+    message: '창을 닫으면 어떻게 할까요?',
+    detail: '트레이로 보내면 단축키가 계속 동작합니다. 트레이 아이콘을 우클릭해 종료할 수 있습니다.',
+    checkboxLabel: '다시 묻지 않기',
+  });
+  if (r.response === 2) return;
+  if (r.checkboxChecked) {
+    cfg.closeAction = r.response === 0 ? 'tray' : 'quit';
+    persist();
+    win.webContents.send('config-patch', { closeAction: cfg.closeAction });
+  }
+  if (r.response === 0) toTray(); else quit();
+}
+
 function createWindow() {
   win = new BrowserWindow({
-    width: 640,
-    height: 800,
-    minWidth: 480,
-    minHeight: 620,
-    backgroundColor: '#14151a',
+    width: 720,
+    height: 840,
+    minWidth: 680,
+    minHeight: 660,
+    backgroundColor: '#101116',
+    alwaysOnTop: cfg.alwaysOnTop,
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       backgroundThrottling: false, // 창이 가려져도 단축키로 즉시 재생
@@ -113,17 +175,20 @@ function createWindow() {
     },
   });
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.on('close', (e) => {
+    if (quitting) return;
+    e.preventDefault();
+    onClose();
+  });
+  win.on('query-session-end', () => { quitting = true; }); // Windows 종료·로그오프를 막지 않는다
   win.loadFile('index.html');
 }
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
-    if (!win) return;
-    if (win.isMinimized()) win.restore();
-    win.focus();
-  });
+  app.on('second-instance', () => win && showWin());
+  app.on('before-quit', () => { quitting = true; });
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
     failed = register();

@@ -19,13 +19,16 @@
     "productName": "Dinnerpad",
     "files": [
       "main.js",
+      "config.js",
       "preload.js",
       "accel.js",
       "renderer.js",
       "index.html",
-      "style.css"
+      "style.css",
+      "icon.png"
     ],
     "win": {
+      "icon": "icon.png",
       "target": [
         "nsis",
         "portable"

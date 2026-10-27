@@ -7,17 +7,57 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <label>출력 장치 <select id="device"></select></label>
-    <button id="stop">모두 정지</button>
-  </header>
-  <main id="grid"></main>
+  <nav id="top">
+    <span class="brand">Dinnerpad</span>
+    <button class="tab on" data-tab="pads">패드</button>
+    <button class="tab" data-tab="settings">설정</button>
+    <span class="sp"></span>
+    <button class="tg" id="tg-mic" aria-pressed="false" title="마이크로 보낼 장치로도 함께 재생">마이크 전송</button>
+    <button class="tg" id="tg-hotkeys" aria-pressed="false" title="다른 프로그램 사용 중에도 단축키로 재생">전역 단축키</button>
+    <button class="tg" id="tg-top" aria-pressed="false" title="다른 창 위에 항상 표시">항상 위</button>
+    <button id="stop">■ 모두 정지</button>
+  </nav>
+
+  <section id="v-pads">
+    <main id="grid"></main>
+    <footer>
+      <button id="edit">편집</button>
+      <button id="del">삭제</button>
+      <button id="key">단축키</button>
+    </footer>
+  </section>
+
+  <section id="v-settings" hidden>
+    <div class="card">
+      <h2>내가 들을 장치</h2>
+      <select id="dev-monitor"></select>
+      <label class="vol">볼륨 <input type="range" id="vol-monitor" min="0" max="100"> <output id="out-monitor"></output></label>
+    </div>
+    <div class="card">
+      <h2>마이크로 보낼 장치 <small>선택 사항</small></h2>
+      <select id="dev-mic"></select>
+      <label class="vol">볼륨 <input type="range" id="vol-mic" min="0" max="100"> <output id="out-mic"></output></label>
+      <p class="hint">오인페의 재생 채널이나 가상 케이블을 고르면, 패드를 누를 때 위 장치와 동시에 재생됩니다. 사용 안 함이면 내가 들을 장치로만 재생됩니다.</p>
+    </div>
+    <div class="card">
+      <h2>창을 닫을 때</h2>
+      <select id="closeAction">
+        <option value="ask">매번 묻기</option>
+        <option value="tray">트레이로 보내기</option>
+        <option value="quit">종료</option>
+      </select>
+      <p class="hint">트레이로 보내면 창이 사라져도 단축키가 계속 동작합니다. 트레이 아이콘을 우클릭해 종료할 수 있습니다.</p>
+    </div>
+  </section>
+
   <div id="status" role="status"></div>
-  <footer>
-    <button id="edit">편집</button>
-    <button id="del">삭제</button>
-    <button id="key">단축키</button>
-  </footer>
+
+  <div id="menu" hidden>
+    <button data-act="edit">편집</button>
+    <button data-act="del">삭제</button>
+    <button data-act="key">단축키</button>
+  </div>
+
   <dialog id="dlg">
     <form method="dialog">
       <label>이름 <input id="name" maxlength="40"></label>

@@ -6,4 +6,5 @@ contextBridge.exposeInMainWorld('dp', {
   hotkeys: (on) => ipcRenderer.invoke('hotkeys', on),
   pick: () => ipcRenderer.invoke('pick'),
   onPlay: (cb) => ipcRenderer.on('play', (_, i) => cb(i)),
+  onPatch: (cb) => ipcRenderer.on('config-patch', (_, p) => cb(p)),
 });
